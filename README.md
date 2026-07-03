@@ -1,75 +1,76 @@
-# try.thiha.cloud — edge Worker
+# try.thiha.cloud — Cloudflare Pages
 
-Serves `try.thiha.cloud` from a Cloudflare Worker backed by KV. The "Deploy to
-production" widget on thiha.cloud POSTs a message here; we write one KV key and
-it's live in **under a second** — no build, no queue, no token anywhere.
+Serves `try.thiha.cloud` as a **Cloudflare Pages** site: a static page plus two
+Pages Functions backed by KV. The "Deploy to production" widget on thiha.cloud
+POSTs a message to `/deploy`; we write one KV key and it's live in **under a
+second** — no build, no queue, no token anywhere.
 
-## Deploy (one-time)
+## Layout
 
-```bash
-npm install              # gets wrangler locally
-npx wrangler login       # opens Cloudflare auth in your browser
-
-# 1) Create the KV namespace and copy the printed id into wrangler.toml
-npx wrangler kv namespace create MESSAGES
-#    → paste the id into kv_namespaces[0].id in wrangler.toml
-
-# 2) Remove the OLD GitHub-Pages DNS record for `try` in the Cloudflare
-#    dashboard (the CNAME → techthiha.github.io). The repo is gone; the Worker
-#    replaces it. `custom_domain = true` in wrangler.toml creates the new record.
-
-# 3) Deploy — this also provisions try.thiha.cloud + TLS
-npm run deploy
+```
+public/index.html     static page — fetches /data (or ?msg= preview), renders as TEXT
+functions/deploy.js   POST /deploy → sanitise + write KV   (origin-locked, rate-limited)
+functions/data.js     GET  /data   → read KV
+wrangler.toml         Pages config + KV binding (for local dev / wrangler deploy)
 ```
 
-## Continuous deploy (pull & watch)
+## Deploy via Cloudflare Pages (Connect to Git)
 
-`.github/workflows/deploy.yml` redeploys the Worker on every push to `main`.
-Add two repo secrets once — **Settings → Secrets → Actions**:
+1. **Create the KV namespace** (once):
+   ```bash
+   npm install
+   npx wrangler login
+   npx wrangler kv namespace create MESSAGES     # copy the printed id
+   ```
+   Paste the id into `wrangler.toml` → `[[kv_namespaces]].id`, then commit + push.
 
-- `CLOUDFLARE_API_TOKEN` — a token with the *Edit Cloudflare Workers* permission
-- `CLOUDFLARE_ACCOUNT_ID` — your Cloudflare account id
+2. **Delete the old `try` CNAME** (→ `techthiha.github.io`) in Cloudflare DNS.
 
-After that: anyone edits → pushes → the Action deploys → you just `git pull` and
-watch the run. No secrets ever live in the browser or the Worker itself.
+3. **Connect the repo:** Cloudflare → Workers & Pages → **Create → Pages → Connect
+   to Git** → `TechThiha/try-thiha-cloud`. Build settings:
+   - Build command: *(empty)*
+   - **Build output directory: `public`**
+
+4. **Bind KV to the Pages project:** project **Settings → Functions → KV namespace
+   bindings → Add** → variable name `MESSAGES` → select your `MESSAGES` namespace.
+   (Functions read it as `env.MESSAGES`.)
+
+5. **Custom domain:** project **Custom domains → Set up a custom domain →
+   `try.thiha.cloud`**.
+
+Every push to `main` now redeploys automatically — pull & watch.
 
 Verify:
 
 ```bash
-curl -s https://try.thiha.cloud/data          # {"message":"Nothing deployed yet.",...}
-curl -s "https://try.thiha.cloud/?msg=hello"   # HTML with "hello"
+curl -s https://try.thiha.cloud/data           # {"message":"Nothing deployed yet.",...}
+curl -s "https://try.thiha.cloud/?msg=hello"    # static page renders "hello"
 ```
 
 ## Point the portfolio at it
 
-Set the build/env var and redeploy the site:
+Set the env var and redeploy the site:
 
 ```
 NUXT_PUBLIC_DEPLOY_TRIGGER_URL=https://try.thiha.cloud/deploy
 ```
 
-The Deploy widget switches from **preview** to **live**: edits are written to KV
-and shown back instantly in the embedded frame.
+The Deploy widget switches from **preview** to **live**: edits hit `/deploy`,
+land in KV, and show back instantly in the embedded frame.
 
-## What's built in (security)
+## Security
 
-- **No secrets.** The Worker only reads/writes a KV string — nothing to leak.
-- **Origin lock:** `/deploy` returns 403 unless the request comes from
-  `thiha.cloud` (or localhost in dev). CORS is set too, but the origin check is
-  the real gate.
+- **No secrets** anywhere — the Functions only read/write a KV string.
+- **Origin lock:** `/deploy` returns 403 unless the request is from `thiha.cloud`
+  (or localhost in dev). CORS is set too, but the origin check is the real gate.
 - **Rate limit:** ~1 write / 15s per IP (KV cooldown) → 429 otherwise.
-- **Sanitised + escaped:** message clamped to 280 chars / name to 40, control
-  chars stripped, and the page renders text **HTML-escaped** — user input can't
-  inject markup or script.
-- **Embedding:** `frame-ancestors` restricts who can iframe the page to
-  thiha.cloud (+ localhost). The portfolio also sandboxes the iframe.
+- **Sanitised:** message clamped to 280 chars / name to 40, control chars stripped.
+- **XSS-safe output:** the page renders values via `textContent`, never `innerHTML`.
 - **noindex** so visitor text never lands in search results.
 
 ## Local dev
 
-Run the Worker locally and point the site's env at it:
-
 ```bash
-wrangler dev                                   # http://localhost:8787
-# then in the portfolio:  NUXT_PUBLIC_DEPLOY_TRIGGER_URL=http://localhost:8787/deploy
+npm run dev     # wrangler pages dev — serves public/ + functions/ with KV
+# then in the portfolio:  NUXT_PUBLIC_DEPLOY_TRIGGER_URL=http://localhost:8788/deploy
 ```

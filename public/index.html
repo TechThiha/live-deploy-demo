@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deployed from thiha.cloud</title>
+  <meta name="robots" content="noindex">
+  <style>
+    :root { color-scheme: dark; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { min-height: 100vh; display: grid; place-items: center; padding: 24px;
+      font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; background: #0b0d0f; color: #e6e8ea; }
+    .card { width: 100%; max-width: 560px; border: 1px solid rgba(148,163,184,0.16); border-radius: 16px; background: #131619; overflow: hidden; }
+    .bar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid rgba(148,163,184,0.16); background: rgba(0,0,0,0.2); }
+    .dot { width: 11px; height: 11px; border-radius: 50%; }
+    .bar span { margin-left: auto; font-size: 12px; color: #9aa4af; }
+    .body { padding: 32px 28px; }
+    .badge { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: #34d399;
+      border: 1px solid rgba(52,211,153,0.3); background: rgba(52,211,153,0.08); padding: 4px 10px; border-radius: 999px; margin-bottom: 18px; }
+    .badge i { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; display: inline-block; }
+    #message { font-size: clamp(22px, 5vw, 34px); font-weight: 800; line-height: 1.25; letter-spacing: -0.01em;
+      white-space: pre-wrap; word-break: break-word; font-family: 'Space Grotesk', system-ui, sans-serif; }
+    .meta { margin-top: 20px; font-size: 13px; color: #9aa4af; }
+    .meta b { color: #cbd5e1; font-weight: 600; }
+    .foot { padding: 14px 16px; border-top: 1px solid rgba(148,163,184,0.16); font-size: 12px; color: #6b7280; text-align: center; }
+    .foot a { color: #34d399; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="bar">
+      <span class="dot" style="background:#ec6a5e"></span>
+      <span class="dot" style="background:#f4bf4f"></span>
+      <span class="dot" style="background:#61c554"></span>
+      <span>try.thiha.cloud · edge</span>
+    </div>
+    <div class="body">
+      <div class="badge"><i></i> deployed &amp; live</div>
+      <div id="message">Loading…</div>
+      <div class="meta">shipped by <b id="by">—</b> · <span id="at">—</span></div>
+    </div>
+    <div class="foot">served from the edge via <a href="https://thiha.cloud" target="_blank" rel="noopener">thiha.cloud</a></div>
+  </div>
+
+  <script>
+    // Render strictly as text — never innerHTML — so nothing user-typed can inject markup.
+    const MAX = 280
+    const clamp = s => String(s == null ? '' : s).slice(0, MAX)
+
+    function paint(data) {
+      document.getElementById('message').textContent = clamp(data.message) || 'Nothing deployed yet.'
+      document.getElementById('by').textContent = clamp(data.by) || 'anonymous'
+      let at = data.at
+      try { at = at ? new Date(at).toLocaleString() : 'just now' } catch (_) { at = 'just now' }
+      document.getElementById('at').textContent = at
+    }
+
+    const params = new URLSearchParams(location.search)
+    if (params.has('msg')) {
+      // Preview: content comes from the URL (client-side only, nothing published).
+      paint({ message: params.get('msg'), by: params.get('by'), at: params.get('at') || Date.now() })
+    } else {
+      // Live: read whatever was actually deployed (the /data Function).
+      fetch('/data?t=' + Date.now())
+        .then(r => r.ok ? r.json() : Promise.reject(new Error('no data')))
+        .then(paint)
+        .catch(() => paint({ message: 'Nothing deployed yet.', by: 'thiha', at: Date.now() }))
+    }
+  </script>
+</body>
+</html>

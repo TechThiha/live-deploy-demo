@@ -2,11 +2,11 @@
   "name": "try-thiha-cloud",
   "version": "1.0.0",
   "private": true,
-  "description": "Edge Worker (Cloudflare Workers + KV) that serves try.thiha.cloud and powers the live 'deploy to production' widget on thiha.cloud.",
+  "description": "Cloudflare Pages site (static page + Functions + KV) serving try.thiha.cloud — the live 'deploy to production' widget on thiha.cloud.",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "tail": "wrangler tail"
+    "dev": "wrangler pages dev",
+    "deploy": "wrangler pages deploy",
+    "tail": "wrangler pages deployment tail"
   },
   "devDependencies": {
     "wrangler": "^3.90.0"

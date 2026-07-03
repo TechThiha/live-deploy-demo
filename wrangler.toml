@@ -1,17 +1,10 @@
 name = "try-thiha-cloud"
-main = "src/index.js"
 compatibility_date = "2024-11-01"
+pages_build_output_dir = "./public"
 
-# KV holds the single current message. Create it once, then paste the id here:
-#   wrangler kv namespace create MESSAGES
-kv_namespaces = [
-  { binding = "MESSAGES", id = "REPLACE_WITH_KV_NAMESPACE_ID" }
-]
-
-# Serves try.thiha.cloud straight from the edge. `custom_domain = true` makes
-# `wrangler deploy` create the DNS record + TLS for you (zone must be on this
-# Cloudflare account — thiha.cloud is). Remove the old GitHub-Pages `try` CNAME
-# first, since the repo is gone.
-routes = [
-  { pattern = "try.thiha.cloud", custom_domain = true }
-]
+# KV holds the single current message. Create it once, paste the id here, and
+# add the same binding in the Pages dashboard (Settings → Functions → KV):
+#   npx wrangler kv namespace create MESSAGES
+[[kv_namespaces]]
+binding = "MESSAGES"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
