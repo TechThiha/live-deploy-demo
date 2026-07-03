@@ -27,7 +27,7 @@ wrangler.toml         Pages config + KV binding (for local dev / wrangler deploy
 2. **Delete the old `try` CNAME** (→ `techthiha.github.io`) in Cloudflare DNS.
 
 3. **Connect the repo:** Cloudflare → Workers & Pages → **Create → Pages → Connect
-   to Git** → `TechThiha/try-thiha-cloud`. Build settings:
+   to Git** → `TechThiha/live-deploy-demo`. Build settings:
    - Build command: *(empty)*
    - **Build output directory: `public`**
 

@@ -1,5 +1,5 @@
 {
-  "name": "try-thiha-cloud",
+  "name": "live-deploy-demo",
   "version": "1.0.0",
   "private": true,
   "description": "Cloudflare Pages site (static page + Functions + KV) serving try.thiha.cloud — the live 'deploy to production' widget on thiha.cloud.",
