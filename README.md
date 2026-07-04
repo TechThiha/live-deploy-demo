@@ -1,9 +1,18 @@
 # live-deploy-demo
 
-A tiny static page hosted on **GitHub Pages**. The "Deploy to production" widget on
-[thiha.cloud](https://thiha.cloud) renders a visitor's message into this page via a
-`?msg=` URL param and shows it back live — no backend, no build per edit.
+The deploy target behind the **"Deploy to production"** widget on
+[thiha.cloud](https://thiha.cloud). Hosted on **GitHub Pages**.
 
-Live: https://techthiha.github.io/live-deploy-demo/
+When a visitor edits a message and hits Deploy, the portfolio's AWS Lambda proxy
+fires a **real `workflow_dispatch`** here (`.github/workflows/deploy.yml`). The
+Action runs `render.mjs` (writes the sanitized message into `data.json`) and
+publishes to GitHub Pages — the visitor watches the actual run, then sees their
+change live. Input rides in as a workflow input; it is never committed to git.
 
-Try it: https://techthiha.github.io/live-deploy-demo/?msg=hello&by=you
+- Live: https://techthiha.github.io/live-deploy-demo/
+- Preview (no deploy): https://techthiha.github.io/live-deploy-demo/?msg=hello&by=you
+
+The page renders `data.json` (or a `?msg=` preview) as **text** — never
+`innerHTML` — so nothing typed can inject markup.
+
+Proxy + token setup: see `lambda/deploy-trigger/README.md` in the portfolio repo.
