@@ -1,0 +1,62 @@
+name: Deploy
+
+# A visitor on thiha.cloud edits a message and hits Deploy. The portfolio's
+# AWS Lambda proxy fires this workflow_dispatch with the message as an INPUT.
+# This writes data.json and publishes it to GitHub Pages — the visitor watches
+# the real run, then sees their message live. Input is never committed to git.
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: Message to publish
+        required: false
+        default: ''
+      by:
+        description: Who deployed it
+        required: false
+        default: ''
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'render.mjs'
+      - '.github/workflows/deploy.yml'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      # Input passed via env — never interpolated into the shell.
+      - name: Build
+        env:
+          MSG: ${{ github.event.inputs.message }}
+          BY: ${{ github.event.inputs.by }}
+        run: node render.mjs
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

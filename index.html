@@ -46,16 +46,25 @@
     // Renders strictly as text — never innerHTML — so nothing typed can inject markup.
     const MAX = 280
     const clamp = s => String(s == null ? '' : s).slice(0, MAX)
-    const p = new URLSearchParams(location.search)
-    const data = p.has('msg')
-      ? { message: p.get('msg'), by: p.get('by'), at: p.get('at') || Date.now() }
-      : { message: 'Hello from thiha.cloud 👋', by: 'Thiha', at: Date.now() }
+    function paint(data) {
+      document.getElementById('message').textContent = clamp(data.message) || 'Nothing deployed yet.'
+      document.getElementById('by').textContent = clamp(data.by) || 'anonymous'
+      let at = data.at
+      try { at = at ? new Date(Number.isNaN(+at) ? at : +at).toLocaleString() : 'just now' } catch (_) { at = 'just now' }
+      document.getElementById('at').textContent = at
+    }
 
-    document.getElementById('message').textContent = clamp(data.message) || 'Nothing deployed yet.'
-    document.getElementById('by').textContent = clamp(data.by) || 'anonymous'
-    let at = data.at
-    try { at = at ? new Date(Number.isNaN(+at) ? at : +at).toLocaleString() : 'just now' } catch (_) { at = 'just now' }
-    document.getElementById('at').textContent = at
+    const p = new URLSearchParams(location.search)
+    if (p.has('msg')) {
+      // Preview: content from the URL (client-side only, nothing deployed).
+      paint({ message: p.get('msg'), by: p.get('by'), at: p.get('at') || Date.now() })
+    } else {
+      // Live: whatever the last real deploy published.
+      fetch('./data.json?t=' + Date.now())
+        .then(r => r.ok ? r.json() : Promise.reject(new Error('no data')))
+        .then(paint)
+        .catch(() => paint({ message: 'Nothing deployed yet.', by: 'thiha', at: Date.now() }))
+    }
   </script>
 </body>
 </html>
