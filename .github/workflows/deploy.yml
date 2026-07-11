@@ -45,17 +45,42 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
+      # ─── Build: write data.json to a dedicated output directory ───
+      - name: Prepare output directory
+        run: mkdir -p _site
+
       # Input passed via env — never interpolated into the shell.
-      - name: Build
+      - name: Build (render data.json)
+        id: build
         env:
           MSG: ${{ github.event.inputs.message }}
           BY: ${{ github.event.inputs.by }}
-        run: node render.mjs
+        run: |
+          node render.mjs
+          # Verify the generated file
+          echo "=== Generated data.json ==="
+          cat data.json
+          # Copy to output dir with cache-busting filename
+          TIMESTAMP=$(date +%s)
+          cp data.json "_site/data-${TIMESTAMP}.json"
+          # Also copy as data.json for backward compatibility
+          cp data.json "_site/data.json"
+          # Write a manifest so index.html can find the latest
+          echo "{\"latest\":\"data-${TIMESTAMP}.json\"}" > "_site/manifest.json"
+          echo "latest_file=data-${TIMESTAMP}.json" >> $GITHUB_OUTPUT
 
+      - name: Debug — list output directory
+        run: |
+          echo "=== _site contents ==="
+          ls -la _site/
+          echo "=== manifest.json ==="
+          cat _site/manifest.json
+
+      # ─── Upload only the output directory (clean artifact) ───
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
 
       - name: Deploy
         id: deployment

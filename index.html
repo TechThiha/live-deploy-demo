@@ -35,7 +35,7 @@
       <span>hosted on GitHub Pages</span>
     </div>
     <div class="body">
-      <div class="badge"><i></i> deployed &amp; live</div>
+      <div class="badge"><i></i> deployed & live</div>
       <div id="message">Loading…</div>
       <div class="meta">shipped by <b id="by">—</b> · <span id="at">—</span></div>
     </div>
@@ -59,8 +59,12 @@
       // Preview: content from the URL (client-side only, nothing deployed).
       paint({ message: p.get('msg'), by: p.get('by'), at: p.get('at') || Date.now() })
     } else {
-      // Live: whatever the last real deploy published.
-      fetch('./data.json?t=' + Date.now())
+      // Live: fetch manifest.json to get the cache-busted data file name,
+      // then fetch that file. This bypasses the 600s GitHub Pages edge cache
+      // because each deploy creates a unique filename (data-<timestamp>.json).
+      fetch('./manifest.json?t=' + Date.now())
+        .then(r => r.ok ? r.json() : Promise.reject(new Error('no manifest')))
+        .then(m => fetch('./' + m.latest + '?t=' + Date.now()))
         .then(r => r.ok ? r.json() : Promise.reject(new Error('no data')))
         .then(paint)
         .catch(() => paint({ message: 'Nothing deployed yet.', by: 'thiha', at: Date.now() }))
