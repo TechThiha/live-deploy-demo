@@ -78,6 +78,9 @@ jobs:
           # Copy modified index.html to _site
           cp index.html "_site/index.html"
 
+          # Copy _headers to _site for GitHub Pages cache control
+          cp _headers "_site/_headers"
+
       - name: Debug — list output directory
         run: |
           echo "=== _site contents ==="
