@@ -23,7 +23,6 @@ on:
       - '.github/workflows/deploy.yml'
 
 permissions:
-  contents: read
   pages: write
   id-token: write
 
@@ -50,7 +49,7 @@ jobs:
         run: mkdir -p _site
 
       # Input passed via env — never interpolated into the shell.
-      - name: Build (render data.json)
+      - name: Build (render data.json + inject CSP nonce)
         id: build
         env:
           MSG: ${{ github.event.inputs.message }}
@@ -69,12 +68,24 @@ jobs:
           echo "{\"latest\":\"data-${TIMESTAMP}.json\"}" > "_site/manifest.json"
           echo "latest_file=data-${TIMESTAMP}.json" >> $GITHUB_OUTPUT
 
+          # Generate CSP nonce and inject into index.html
+          NONCE=$(openssl rand -base64 16)
+          echo "nonce=$NONCE" >> $GITHUB_OUTPUT
+          # Inject nonce into index.html script and style tags, and CSP meta tag
+          sed -i "s|<script>|<script nonce=\"$NONCE\">|" index.html
+          sed -i "s|<style>|<style nonce=\"$NONCE\">|" index.html
+          sed -i "s|CSP_NONCE_PLACEHOLDER|$NONCE|g" index.html
+          # Copy modified index.html to _site
+          cp index.html "_site/index.html"
+
       - name: Debug — list output directory
         run: |
           echo "=== _site contents ==="
           ls -la _site/
           echo "=== manifest.json ==="
           cat _site/manifest.json
+          echo "=== index.html (first 10 lines) ==="
+          head -10 _site/index.html
 
       # ─── Upload only the output directory (clean artifact) ───
       - name: Upload artifact
