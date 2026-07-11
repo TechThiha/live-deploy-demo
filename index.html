@@ -35,7 +35,8 @@
       <span>hosted on GitHub Pages</span>
     </div>
     <div class="body">
-      <div class="badge"><i></i> deployed & live</div>
+      <div id="mode-badge" class="badge" style="display:none;"></div>
+      <div class="badge" id="live-badge"><i></i> deployed & live</div>
       <div id="message">Loading…</div>
       <div class="meta">shipped by <b id="by">—</b> · <span id="at">—</span></div>
     </div>
@@ -55,9 +56,19 @@
     }
 
     const p = new URLSearchParams(location.search)
-    if (p.has('msg')) {
+    const previewMsg = p.get('msg')
+    const previewBy = p.get('by')
+    const previewAt = p.get('at')
+    if (previewMsg) {
       // Preview: content from the URL (client-side only, nothing deployed).
-      paint({ message: p.get('msg'), by: p.get('by'), at: p.get('at') || Date.now() })
+      document.getElementById('mode-badge').style.display = 'inline-flex'
+      document.getElementById('mode-badge').innerHTML = '<i></i> preview mode — not deployed'
+      document.getElementById('mode-badge').style.borderColor = 'rgba(234,179,8,0.3)'
+      document.getElementById('mode-badge').style.background = 'rgba(234,179,8,0.08)'
+      document.getElementById('mode-badge').style.color = '#fbbf24'
+      document.getElementById('mode-badge').querySelector('i').style.background = '#f59e0b'
+      document.getElementById('live-badge').style.display = 'none'
+      paint({ message: previewMsg, by: previewBy, at: previewAt || Date.now() })
     } else {
       // Live: fetch manifest.json to get the cache-busted data file name,
       // then fetch that file. This bypasses the 600s GitHub Pages edge cache
