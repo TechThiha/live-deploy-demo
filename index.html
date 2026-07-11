@@ -46,6 +46,12 @@
     <div class="foot">deployed from <a href="https://thiha.cloud" target="_blank" rel="noopener">thiha.cloud</a></div>
   </div>
 
+  <!-- Embedded manifest (injected at build time) — no extra fetch, bypasses edge cache -->
+  <script nonce="CSP_NONCE_PLACEHOLDER">
+    // Injected at build time by GitHub Actions
+    window.__DEPLOY_MANIFEST__ = JSON.parse('MANIFEST_JSON_PLACEHOLDER');
+  </script>
+
   <script nonce="CSP_NONCE_PLACEHOLDER">
     // Renders strictly as text — never innerHTML — so nothing typed can inject markup.
     const MAX = 280
@@ -71,15 +77,16 @@
       if (liveBadge) liveBadge.style.display = 'none'
       paint({ message: previewMsg, by: previewBy, at: previewAt || Date.now() })
     } else {
-      // Live: fetch manifest.json to get the cache-busted data file name,
-      // then fetch that file. This bypasses the 600s GitHub Pages edge cache
-      // because each deploy creates a unique filename (data-<timestamp>.json).
-      fetch('./manifest.json?t=' + Date.now())
-        .then(r => r.ok ? r.json() : Promise.reject(new Error('no manifest')))
-        .then(m => fetch('./' + m.latest + '?t=' + Date.now()))
-        .then(r => r.ok ? r.json() : Promise.reject(new Error('no data')))
-        .then(paint)
-        .catch(() => paint({ message: 'Nothing deployed yet.', by: 'thiha', at: Date.now() }))
+      // Live: use embedded manifest — no extra fetch, bypasses edge cache entirely
+      const latestFile = window.__DEPLOY_MANIFEST__?.latest
+      if (latestFile) {
+        fetch('./' + latestFile + '?t=' + Date.now())
+          .then(r => r.ok ? r.json() : Promise.reject(new Error('no data')))
+          .then(paint)
+          .catch(() => paint({ message: 'Nothing deployed yet.', by: 'thiha', at: Date.now() }))
+      } else {
+        paint({ message: 'Nothing deployed yet.', by: 'thiha', at: Date.now() })
+      }
     }
   </script>
 </body>
