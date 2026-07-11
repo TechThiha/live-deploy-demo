@@ -23,7 +23,6 @@ on:
       - '.github/workflows/deploy.yml'
 
 permissions:
-  contents: read
   pages: write
   id-token: write
 
@@ -45,17 +44,54 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
+      # ─── Build: write data.json to a dedicated output directory ───
+      - name: Prepare output directory
+        run: mkdir -p _site
+
       # Input passed via env — never interpolated into the shell.
-      - name: Build
+      - name: Build (render data.json + inject CSP nonce)
+        id: build
         env:
           MSG: ${{ github.event.inputs.message }}
           BY: ${{ github.event.inputs.by }}
-        run: node render.mjs
+        run: |
+          node render.mjs
+          # Verify the generated file
+          echo "=== Generated data.json ==="
+          cat data.json
+          # Copy to output dir with cache-busting filename
+          TIMESTAMP=$(date +%s)
+          cp data.json "_site/data-${TIMESTAMP}.json"
+          # Also copy as data.json for backward compatibility
+          cp data.json "_site/data.json"
+          # Write a manifest so index.html can find the latest
+          echo "{\"latest\":\"data-${TIMESTAMP}.json\"}" > "_site/manifest.json"
+          echo "latest_file=data-${TIMESTAMP}.json" >> $GITHUB_OUTPUT
 
+          # Generate CSP nonce and inject into index.html
+          NONCE=$(openssl rand -base64 16)
+          echo "nonce=$NONCE" >> $GITHUB_OUTPUT
+          # Inject nonce into index.html script and style tags, and CSP meta tag
+          sed -i "s|<script>|<script nonce=\"$NONCE\">|" index.html
+          sed -i "s|<style>|<style nonce=\"$NONCE\">|" index.html
+          sed -i "s|CSP_NONCE_PLACEHOLDER|$NONCE|g" index.html
+          # Copy modified index.html to _site
+          cp index.html "_site/index.html"
+
+      - name: Debug — list output directory
+        run: |
+          echo "=== _site contents ==="
+          ls -la _site/
+          echo "=== manifest.json ==="
+          cat _site/manifest.json
+          echo "=== index.html (first 10 lines) ==="
+          head -10 _site/index.html
+
+      # ─── Upload only the output directory (clean artifact) ───
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
 
       - name: Deploy
         id: deployment

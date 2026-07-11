@@ -2,7 +2,7 @@
 // build — the visitor's text ends up only in the deployed artifact. Input
 // arrives via env (never interpolated into the shell), so there's no Actions
 // script-injection surface. index.html renders it as text (never innerHTML).
-import { writeFileSync } from 'node:fs'
+import { writeFileSync, mkdirSync } from 'node:fs'
 
 // Built from an escaped string so no raw control bytes live in this file.
 const CONTROL = new RegExp('[\\u0000-\\u001F\\u007F]', 'g')
@@ -14,5 +14,14 @@ const data = {
   at: new Date().toISOString(),
 }
 
+// Write to current directory (for verification step)
 writeFileSync('data.json', `${JSON.stringify(data, null, 2)}\n`)
 console.log('Published:', data)
+
+// Also write to _site if it exists (for the artifact)
+try {
+  mkdirSync('_site', { recursive: true })
+  writeFileSync('_site/data.json', `${JSON.stringify(data, null, 2)}\n`)
+} catch {
+  // _site may not exist in local dev — ignore
+}

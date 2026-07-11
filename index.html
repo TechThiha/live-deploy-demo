@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Deployed from thiha.cloud</title>
   <meta name="robots" content="noindex">
-  <style>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'nonce-CSP_NONCE_PLACEHOLDER'; style-src 'self' 'nonce-CSP_NONCE_PLACEHOLDER'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'">
+  <style nonce="CSP_NONCE_PLACEHOLDER">
     :root { color-scheme: dark; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { min-height: 100vh; display: grid; place-items: center; padding: 24px;
@@ -24,6 +25,8 @@
     .meta b { color: #cbd5e1; font-weight: 600; }
     .foot { padding: 14px 16px; border-top: 1px solid rgba(148,163,184,0.16); font-size: 12px; color: #6b7280; text-align: center; }
     .foot a { color: #34d399; text-decoration: none; }
+    #mode-badge { border-color: rgba(234,179,8,0.3); background: rgba(234,179,8,0.08); color: #fbbf24; display: none; }
+    #mode-badge i { background: #f59e0b; }
   </style>
 </head>
 <body>
@@ -35,14 +38,15 @@
       <span>hosted on GitHub Pages</span>
     </div>
     <div class="body">
-      <div class="badge"><i></i> deployed &amp; live</div>
+      <div class="badge"><i></i> deployed & live</div>
+      <div class="badge" id="mode-badge" style="display:none;"><i></i> preview mode — not deployed</div>
       <div id="message">Loading…</div>
       <div class="meta">shipped by <b id="by">—</b> · <span id="at">—</span></div>
     </div>
     <div class="foot">deployed from <a href="https://thiha.cloud" target="_blank" rel="noopener">thiha.cloud</a></div>
   </div>
 
-  <script>
+  <script nonce="CSP_NONCE_PLACEHOLDER">
     // Renders strictly as text — never innerHTML — so nothing typed can inject markup.
     const MAX = 280
     const clamp = s => String(s == null ? '' : s).slice(0, MAX)
@@ -55,12 +59,24 @@
     }
 
     const p = new URLSearchParams(location.search)
-    if (p.has('msg')) {
+    const previewMsg = p.get('msg')
+    const previewBy = p.get('by')
+    const previewAt = p.get('at')
+    const modeBadge = document.getElementById('mode-badge')
+    const liveBadge = document.querySelector('.badge:not(#mode-badge)')
+
+    if (previewMsg) {
       // Preview: content from the URL (client-side only, nothing deployed).
-      paint({ message: p.get('msg'), by: p.get('by'), at: p.get('at') || Date.now() })
+      modeBadge.style.display = 'inline-flex'
+      if (liveBadge) liveBadge.style.display = 'none'
+      paint({ message: previewMsg, by: previewBy, at: previewAt || Date.now() })
     } else {
-      // Live: whatever the last real deploy published.
-      fetch('./data.json?t=' + Date.now())
+      // Live: fetch manifest.json to get the cache-busted data file name,
+      // then fetch that file. This bypasses the 600s GitHub Pages edge cache
+      // because each deploy creates a unique filename (data-<timestamp>.json).
+      fetch('./manifest.json?t=' + Date.now())
+        .then(r => r.ok ? r.json() : Promise.reject(new Error('no manifest')))
+        .then(m => fetch('./' + m.latest + '?t=' + Date.now()))
         .then(r => r.ok ? r.json() : Promise.reject(new Error('no data')))
         .then(paint)
         .catch(() => paint({ message: 'Nothing deployed yet.', by: 'thiha', at: Date.now() }))
