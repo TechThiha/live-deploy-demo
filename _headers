@@ -1,4 +1,0 @@
-/manifest.json
-  Cache-Control: max-age=0, must-revalidate, no-cache, no-store
-/data-*.json
-  Cache-Control: max-age=0, must-revalidate, no-cache, no-store
