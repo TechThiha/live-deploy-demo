@@ -26,7 +26,8 @@ Hosted on **GitHub Pages** at https://techthiha.github.io/live-deploy-demo/
 ├── _site/              # Artifact output (created at build time)
 ├── .github/workflows/
 │   └── deploy.yml      # workflow_dispatch + push → build → upload-pages-artifact → deploy-pages
-└── data.json           # Fallback (not used by live deploys)
+└── data.json           # Stable-path copy of the latest deploy; index.html
+                        # falls back to it when the embedded manifest is stale
 ```
 
 ---
@@ -58,6 +59,28 @@ MSG="hello" BY="me" node render.mjs
 - Lambda holds the PAT server-side; browser never sees it
 - Per-IP DynamoDB cooldown (30s) + origin allowlist on the Lambda
 - Fine-grained PAT scoped to **Actions: Read & Write** on *this repo only*
+
+### What GitHub Pages cannot do here
+
+Pages serves static files and **sends no custom headers**. A `_headers` file is a
+Netlify / Cloudflare Pages convention and is ignored — one used to live here
+setting `no-store` on `manifest.json` and `data-*.json`, and it never once took
+effect. Verified: the response carries no `Content-Security-Policy`,
+`X-Frame-Options` or `Referrer-Policy`.
+
+What that means in practice:
+
+- **Cache control** is done in the client instead — every fetch appends `?t=`,
+  and a stale manifest falls back to `data.json`.
+- The CSP is delivered via `<meta>`, so directives that only work as a real
+  header are inert. `frame-ancestors` is the notable one: it is kept accurate
+  (`https://dev.thiha.cloud`) as documentation of intent, and the browser logs
+  that it is ignored. `X-Frame-Options` cannot be set at all.
+- Treat this page as **publicly framable**. Nothing sensitive belongs on it —
+  it renders one short public message, which is the whole design.
+
+Putting the site behind Cloudflare would make `_headers` real and these
+directives enforceable.
 
 ---
 
