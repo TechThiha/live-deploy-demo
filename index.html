@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Deployed from thiha.cloud</title>
   <meta name="robots" content="noindex">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'nonce-CSP_NONCE_PLACEHOLDER'; style-src 'self' 'nonce-CSP_NONCE_PLACEHOLDER'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'nonce-CSP_NONCE_PLACEHOLDER'; style-src 'self' 'nonce-CSP_NONCE_PLACEHOLDER'; img-src 'self' data:; connect-src 'self'; frame-ancestors https://dev.thiha.cloud; base-uri 'none'; form-action 'none'">
   <style nonce="CSP_NONCE_PLACEHOLDER">
     :root { color-scheme: dark; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -14,6 +14,9 @@
     .card { width: 100%; max-width: 560px; border: 1px solid rgba(148,163,184,0.16); border-radius: 16px; background: #131619; overflow: hidden; }
     .bar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid rgba(148,163,184,0.16); background: rgba(0,0,0,0.2); }
     .dot { width: 11px; height: 11px; border-radius: 50%; }
+    .dot--close { background: #ec6a5e; }
+    .dot--min { background: #f4bf4f; }
+    .dot--max { background: #61c554; }
     .bar span { margin-left: auto; font-size: 12px; color: #9aa4af; }
     .body { padding: 32px 28px; }
     .badge { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: #34d399;
@@ -32,9 +35,9 @@
 <body>
   <div class="card">
     <div class="bar">
-      <span class="dot" style="background:#ec6a5e"></span>
-      <span class="dot" style="background:#f4bf4f"></span>
-      <span class="dot" style="background:#61c554"></span>
+      <span class="dot dot--close"></span>
+      <span class="dot dot--min"></span>
+      <span class="dot dot--max"></span>
       <span>hosted on GitHub Pages</span>
     </div>
     <div class="body">
