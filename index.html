@@ -39,7 +39,7 @@
     </div>
     <div class="body">
       <div class="badge"><i></i> deployed & live</div>
-      <div class="badge" id="mode-badge" style="display:none;"><i></i> preview mode — not deployed</div>
+      <div class="badge" id="mode-badge" hidden><i></i> preview mode — not deployed</div>
       <div id="message">Loading…</div>
       <div class="meta">shipped by <b id="by">—</b> · <span id="at">—</span></div>
     </div>
@@ -73,20 +73,28 @@
 
     if (previewMsg) {
       // Preview: content from the URL (client-side only, nothing deployed).
-      modeBadge.style.display = 'inline-flex'
-      if (liveBadge) liveBadge.style.display = 'none'
+      // `hidden` is a property, not a style attribute, so it survives the
+      // CSP style-src policy; .badge already carries its own display rule.
+      modeBadge.hidden = false
+      if (liveBadge) liveBadge.hidden = true
       paint({ message: previewMsg, by: previewBy, at: previewAt || Date.now() })
     } else {
       // Live: use embedded manifest — no extra fetch, bypasses edge cache entirely
+      // Each deploy publishes a fresh _site, so the PREVIOUS data-<ts>.json no
+      // longer exists. While Pages propagates, a browser can still be served the
+      // old index.html, whose embedded manifest names that deleted file - which
+      // 404s and used to fall straight through to "Nothing deployed yet.".
+      // data.json is published at a stable path every run, so it is the fallback.
+      const get = url => fetch(url + '?t=' + Date.now())
+        .then(r => r.ok ? r.json() : Promise.reject(new Error('no data')))
+
       const latestFile = window.__DEPLOY_MANIFEST__?.latest
-      if (latestFile) {
-        fetch('./' + latestFile + '?t=' + Date.now())
-          .then(r => r.ok ? r.json() : Promise.reject(new Error('no data')))
-          .then(paint)
-          .catch(() => paint({ message: 'Nothing deployed yet.', by: 'thiha', at: Date.now() }))
-      } else {
-        paint({ message: 'Nothing deployed yet.', by: 'thiha', at: Date.now() })
-      }
+      const first = latestFile ? get('./' + latestFile) : Promise.reject(new Error('no manifest'))
+
+      first
+        .catch(() => get('./data.json'))
+        .then(paint)
+        .catch(() => paint({ message: 'Nothing deployed yet.', by: 'thiha', at: Date.now() }))
     }
   </script>
 </body>
