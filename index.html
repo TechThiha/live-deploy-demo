@@ -83,19 +83,36 @@
       paint({ message: previewMsg, by: previewBy, at: previewAt || Date.now() })
     } else {
       // Live: use embedded manifest — no extra fetch, bypasses edge cache entirely
-      // Each deploy publishes a fresh _site, so the PREVIOUS data-<ts>.json no
-      // longer exists. While Pages propagates, a browser can still be served the
-      // old index.html, whose embedded manifest names that deleted file - which
-      // 404s and used to fall straight through to "Nothing deployed yet.".
-      // data.json is published at a stable path every run, so it is the fallback.
-      const get = url => fetch(url + '?t=' + Date.now())
+      // GitHub Pages caches by PATH and ignores the query string - verified:
+      // `?t=<random>` still returns `x-cache: HIT`. So the ?t= below busts the
+      // browser cache only, and the edge can serve either file up to 10 minutes
+      // stale (cache-control: max-age=600). A brand new path is the only
+      // guaranteed miss, which is what data-<ts>.json is for - but a cached
+      // index.html names a file the current deploy has already deleted, and
+      // that 404 is what produced "Nothing deployed yet." after a good deploy.
+      //
+      // So read both and keep whichever is genuinely newer. data.json is a
+      // stable path that always exists; the timestamped file is fresher when
+      // this index.html is current. A stale page then shows the previous
+      // message rather than claiming nothing was ever deployed.
+      const get = url => fetch(url + '?t=' + Date.now(), { cache: 'no-store' })
         .then(r => r.ok ? r.json() : Promise.reject(new Error('no data')))
 
       const latestFile = window.__DEPLOY_MANIFEST__?.latest
-      const first = latestFile ? get('./' + latestFile) : Promise.reject(new Error('no manifest'))
+      const sources = [get('./data.json')]
+      if (latestFile)
+        sources.push(get('./' + latestFile))
 
-      first
-        .catch(() => get('./data.json'))
+      Promise.allSettled(sources)
+        .then((results) => {
+          const found = results
+            .filter(r => r.status === 'fulfilled' && r.value)
+            .map(r => r.value)
+          if (!found.length)
+            throw new Error('no data')
+          found.sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0))
+          return found[0]
+        })
         .then(paint)
         .catch(() => paint({ message: 'Nothing deployed yet.', by: 'thiha', at: Date.now() }))
     }
