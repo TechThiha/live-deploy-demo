@@ -10,7 +10,7 @@
     :root { color-scheme: dark; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { min-height: 100vh; display: grid; place-items: center; padding: 24px;
-      font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; background: #0b0d0f; color: #e6e8ea; }
+      font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'Noto Sans Myanmar', 'Myanmar Sangam MN', 'Myanmar MN', 'Padauk', monospace; background: #0b0d0f; color: #e6e8ea; }
     .card { width: 100%; max-width: 560px; border: 1px solid rgba(148,163,184,0.16); border-radius: 16px; background: #131619; overflow: hidden; }
     .bar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid rgba(148,163,184,0.16); background: rgba(0,0,0,0.2); }
     .dot { width: 11px; height: 11px; border-radius: 50%; }
@@ -22,8 +22,11 @@
     .badge { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: #34d399;
       border: 1px solid rgba(52,211,153,0.3); background: rgba(52,211,153,0.08); padding: 4px 10px; border-radius: 999px; margin-bottom: 18px; }
     .badge i { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; display: inline-block; }
-    #message { font-size: clamp(22px, 5vw, 34px); font-weight: 800; line-height: 1.25; letter-spacing: -0.01em;
-      white-space: pre-wrap; word-break: break-word; font-family: 'Space Grotesk', system-ui, sans-serif; }
+    #message { font-size: clamp(22px, 5vw, 34px); font-weight: 800; line-height: 1.4; letter-spacing: -0.01em;
+      white-space: pre-wrap; word-break: break-word; font-family: 'Space Grotesk', 'Noto Sans Myanmar', 'Myanmar Sangam MN', 'Myanmar MN', 'Padauk', system-ui, sans-serif; }
+    /* The message and name are typed by whoever deployed, so the page labels
+       them as such - no "by" value can pass for a notice from the site. */
+    .note { font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: #9aa4af; margin-bottom: 10px; }
     .meta { margin-top: 20px; font-size: 13px; color: #9aa4af; }
     .meta b { color: #cbd5e1; font-weight: 600; }
     .foot { padding: 14px 16px; border-top: 1px solid rgba(148,163,184,0.16); font-size: 12px; color: #6b7280; text-align: center; }
@@ -43,6 +46,7 @@
     <div class="body">
       <div class="badge"><i></i> deployed & live</div>
       <div class="badge" id="mode-badge" hidden><i></i> preview mode — not deployed</div>
+      <div class="note">visitor-submitted message · not an official notice</div>
       <div id="message">Loading…</div>
       <div class="meta">shipped by <b id="by">—</b> · <span id="at">—</span></div>
     </div>
